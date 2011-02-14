@@ -2,6 +2,7 @@ package org.bndtools.runtime.controller.internal;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -32,12 +33,12 @@ public class BundlesHandler implements IHandler {
         if (tokenizedPath.length == 0) {
             response = listBundles();
         } else {
-            response = new DefaultResponse(IResponse.HTTP_INTERNALERROR, IResponse.MIME_PLAINTEXT, "Not implemented.");
+            response = new DefaultResponse(IResponse.HTTP_NOTIMPLEMENTED, IResponse.MIME_PLAINTEXT, "Not implemented.");
         }
         return response;
     }
 
-    public IResponse handlePost(String[] queryPath, Properties params, Properties uploads) {
+    public IResponse handlePost(String[] queryPath, Properties params, Properties uploads, InputStream content) {
         IResponse response;
         if (queryPath.length == 0) {
             try {
@@ -68,11 +69,11 @@ public class BundlesHandler implements IHandler {
             } catch (NumberFormatException e) {
                 response = new DefaultResponse(IResponse.HTTP_BADREQUEST, IResponse.MIME_PLAINTEXT, e.getMessage());
             } catch (FileNotFoundException e) {
-                response = new DefaultResponse(IResponse.HTTP_INTERNALERROR, IResponse.MIME_PLAINTEXT, e.getMessage());
+            	response = DefaultResponse.createInternalError(e);
             } catch (BundleException e) {
-                response = new DefaultResponse(IResponse.HTTP_INTERNALERROR, IResponse.MIME_PLAINTEXT, e.getMessage());
+            	response = DefaultResponse.createInternalError(e);
             } catch (IllegalArgumentException e) {
-                response = new DefaultResponse(IResponse.HTTP_BADREQUEST, IResponse.MIME_PLAINTEXT, e.getMessage());
+            	response = DefaultResponse.createBadRequestError(e.getMessage());
             }
         }
 
@@ -107,6 +108,46 @@ public class BundlesHandler implements IHandler {
         }
 
         return response;
+    }
+    
+    public IResponse handlePut(String[] queryPath, Properties params, Properties uploads, InputStream content) {
+    	IResponse response;
+    	
+    	if (queryPath.length == 0) {
+    		response = new DefaultResponse(IResponse.HTTP_BADREQUEST, IResponse.MIME_PLAINTEXT, "Invalid request");
+    	} else {
+    		try {
+				Bundle bundle = findBundle(queryPath[0]);
+				try {
+					if (queryPath.length == 1 && content != null) {
+						// Update from supplied content
+						bundle.update(content);
+						response = listBundles();
+					} else if (queryPath.length == 2 && "update".equals(queryPath[1])) {
+						// Update from persistent location
+						bundle.update();
+						response = listBundles();
+					} else if (queryPath.length == 2 && "start".equals(queryPath[1])) {
+						bundle.start();
+						response = listBundles();
+					} else if (queryPath.length == 2 && "stop".equals(queryPath[1])) {
+						bundle.stop();
+						response = listBundles();
+					} else {
+						response = new DefaultResponse(IResponse.HTTP_BADREQUEST, IResponse.MIME_PLAINTEXT, "Invalid request");
+					}
+				} catch (BundleException e) {
+					response = DefaultResponse.createInternalError(e);
+					response = new DefaultResponse(IResponse.HTTP_INTERNALERROR, IResponse.MIME_PLAINTEXT, e.getMessage());
+				}
+			} catch (NumberFormatException e) {
+	    		response = new DefaultResponse(IResponse.HTTP_BADREQUEST, IResponse.MIME_PLAINTEXT, e.getMessage());
+			} catch (IllegalArgumentException e) {
+	    		response = new DefaultResponse(IResponse.HTTP_NOTFOUND, IResponse.MIME_PLAINTEXT, "No such bundle " + queryPath[0]);
+			}
+    	}
+    	
+    	return response;
     }
 
     protected Bundle findBundle(String id) throws IllegalArgumentException, NumberFormatException {

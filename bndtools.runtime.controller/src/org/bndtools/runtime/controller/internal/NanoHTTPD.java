@@ -77,9 +77,10 @@ public class NanoHTTPD
 	 * @param method	"GET", "POST" etc.
 	 * @param parms	Parsed, percent decoded parameters from URI and, in case of POST, data.
 	 * @param header	Header entries, percent decoded
+	 * @param content Content data if not "multipart/form-data" or "application/x-url-form-encoded"
 	 * @return HTTP response, see class IResponse for details
 	 */
-	public Response serve( String uri, String method, Properties header, Properties parms, Properties files )
+	public Response serve( String uri, String method, Properties header, Properties parms, Properties files, InputStream content )
 	{
 		System.out.println( method + " '" + uri + "' " );
 
@@ -320,6 +321,7 @@ public class NanoHTTPD
 				Properties parms = new Properties();
 				Properties header = new Properties();
 				Properties files = new Properties();
+				InputStream content = null;
 
 				// Decode the header into parms and header java properties
 				decodeHeader(hin, pre, parms, header);
@@ -378,14 +380,15 @@ public class NanoHTTPD
 
 				// Create a BufferedReader for easily reading it as string.
 				ByteArrayInputStream bin = new ByteArrayInputStream(fbuf);
-				BufferedReader in = new BufferedReader( new InputStreamReader(bin));
 
-				// If the method is POST, there may be parameters
+				// If the method is POST or PUT, there may be parameters
 				// in data section, too, read it:
-				if ( method.equalsIgnoreCase( "POST" ))
+				if ( method.equalsIgnoreCase( "POST" ) || "PUT".equalsIgnoreCase(method))
 				{
 					String contentType = "";
 					String contentTypeHeader = header.getProperty("content-type");
+					if (contentTypeHeader == null)
+						contentTypeHeader = "";
 					StringTokenizer st = new StringTokenizer( contentTypeHeader , "; " );
 					if ( st.hasMoreTokens()) {
 						contentType = st.nextToken();
@@ -403,13 +406,15 @@ public class NanoHTTPD
 						st.nextToken();
 						String boundary = st.nextToken();
 
+						BufferedReader in = new BufferedReader( new InputStreamReader(bin));
 						decodeMultipartData(boundary, fbuf, in, parms, files);
 					}
-					else
+					else if(contentType.equalsIgnoreCase("application/x-www-form-urlencoded"))
 					{
 						// Handle application/x-www-form-urlencoded
 						String postLine = "";
 						char pbuf[] = new char[512];
+						BufferedReader in = new BufferedReader( new InputStreamReader(bin));
 						int read = in.read(pbuf);
 						while ( read >= 0 && !postLine.endsWith("\r\n") )
 						{
@@ -419,16 +424,20 @@ public class NanoHTTPD
 						postLine = postLine.trim();
 						decodeParms( postLine, parms );
 					}
+					else
+					{
+						// Handle arbitrary data
+						content = bin;
+					}
 				}
 
 				// Ok, now do the serve()
-				Response r = serve( uri, method, header, parms, files );
+				Response r = serve( uri, method, header, parms, files, content );
 				if ( r == null )
 					sendError( HTTP_INTERNALERROR, "SERVER INTERNAL ERROR: Serve() returned a null response." );
 				else
 					sendResponse( r.status, r.mimeType, r.header, r.data );
 
-				in.close();
 				is.close();
 			}
 			catch ( IOException ioe )

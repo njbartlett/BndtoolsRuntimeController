@@ -1,6 +1,6 @@
 package org.bndtools.runtime.controller;
 
-import java.util.Arrays;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -54,32 +54,36 @@ public abstract class AbstractServer implements IServer {
         }
     }
 
-    protected IResponse dispatch(String method, String[] tokenizedPath, Properties params, Properties uploads) {
+    protected IResponse dispatch(String method, String[] tokenizedPath, Properties params, Properties uploads, InputStream content) {
         IResponse response;
 
-        if (tokenizedPath == null)
-            response = new DefaultResponse(IResponse.HTTP_BADREQUEST, IResponse.MIME_PLAINTEXT, "Invalid request.");
-        else if (tokenizedPath.length == 0) {
+    	if (tokenizedPath.length == 0 && "GET".equals(method)) {
+        	// Handle "GET /" to return a list of path prefixes
             String commandList = listCommandsText();
             response = new DefaultResponse(IResponse.HTTP_OK, IResponse.MIME_PLAINTEXT, commandList);
-        } else {
+    	} else if (tokenizedPath.length > 0) {
+    		// Dispatch to a handler based on path prefix
             IHandler handler = (IHandler) handlers.get(tokenizedPath[0]);
             if (handler != null) {
                 String[] queryPath = drop(tokenizedPath, 1);
                 if ("GET".equals(method))
                     response = handler.handleGet(queryPath, params);
                 else if ("POST".equals(method))
-                    response = handler.handlePost(queryPath, params, uploads);
+                    response = handler.handlePost(queryPath, params, uploads, content);
                 else if ("DELETE".equals(method))
                     response = handler.handleDelete(queryPath, params);
+                else if ("PUT".equals(method))
+                	response = handler.handlePut(queryPath, params, uploads, content);
                 else
                     response = new DefaultResponse(IResponse.HTTP_BADREQUEST, IResponse.MIME_PLAINTEXT, "Unsupported method: " + method);
 
                 if (response == null)
-                    response = new DefaultResponse(IResponse.HTTP_INTERNALERROR, IResponse.MIME_PLAINTEXT, "Internal IServer Error");
+                	response = DefaultResponse.createInternalError(null);
             } else {
                 response = new DefaultResponse(IResponse.HTTP_NOTFOUND, IResponse.MIME_PLAINTEXT, "Not found: " + detokenize(tokenizedPath));
             }
+        } else {
+        	response = new DefaultResponse(IResponse.HTTP_BADREQUEST, IResponse.MIME_PLAINTEXT, "Invalid request.");
         }
 
         return response;

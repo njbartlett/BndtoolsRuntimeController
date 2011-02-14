@@ -25,7 +25,7 @@ public class BundlesHandlerTest extends TestCase {
     private final URI bundlesURI;
 
     public BundlesHandlerTest() throws URISyntaxException {
-        bundlesURI = new URI(HTTP, null, LOCALHOST, 8081, "/bundles/", null, null);
+        bundlesURI = new URI(HTTP, null, LOCALHOST, 2605, "/bundles/", null, null);
     }
 
     public void testListBundles() throws Exception {
@@ -108,7 +108,8 @@ public class BundlesHandlerTest extends TestCase {
         assertEquals(initialBundles.size(), afterBundles.size());
     }
 
-    public void testStopBundle() throws ResourceException, IOException {
+    public void testStopStartBundle() throws ResourceException, IOException {
+    	// Find initial bundle list and search for our victim
         StringWriter writer = new StringWriter();
         new ClientResource(bundlesURI).get().write(writer);
 
@@ -117,6 +118,7 @@ public class BundlesHandlerTest extends TestCase {
         assertNotNull(victim);
         assertEquals("ACTIVE", victim.getState());
 
+        // Stop the bundle and check state
         writer = new StringWriter();
         URI requestURI = bundlesURI.resolve(Long.toString(victim.getId()) + "/stop");
         new ClientResource(requestURI).put(new EmptyRepresentation()).write(writer);
@@ -125,7 +127,16 @@ public class BundlesHandlerTest extends TestCase {
         victim = Utils.findBundleByBSN("org.joda.time", afterBundles);
         assertNotNull(victim);
         assertEquals("RESOLVED", victim.getState());
+        
+        // Start the bundle again and check state 
+        writer = new StringWriter();
+        requestURI = bundlesURI.resolve(Long.toString(victim.getId()) + "/start");
+        new ClientResource(requestURI).put(new EmptyRepresentation()).write(writer);
 
+        afterBundles = new ListOfBundlesParser(writer.toString()).parse();
+        victim = Utils.findBundleByBSN("org.joda.time", afterBundles);
+        assertNotNull(victim);
+        assertEquals("ACTIVE", victim.getState());
     }
-
+    
 }

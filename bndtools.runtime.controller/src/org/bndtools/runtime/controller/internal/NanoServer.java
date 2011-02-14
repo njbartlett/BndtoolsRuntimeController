@@ -2,6 +2,7 @@ package org.bndtools.runtime.controller.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Properties;
 
@@ -26,7 +27,7 @@ public class NanoServer extends AbstractServer {
     public void start() throws IOException {
     	log.log(null, LogService.LOG_INFO, "Starting NanoHTTPD on port " + port, null);
         httpd = new NanoHTTPD(port) {
-            public Response serve(String uri, String method, Properties header, Properties params, Properties files) {
+            public Response serve(String uri, String method, Properties header, Properties params, Properties files, InputStream content) {
                 Response response;
                 if (uri.startsWith(PREFIX_FILE)) {
                     response = super.serveFile("/" + uri.substring(PREFIX_FILE.length()), header, new File(System.getProperty("user.dir")), false);
@@ -45,7 +46,7 @@ public class NanoServer extends AbstractServer {
                         }
                     }
 
-                    IResponse r = dispatch(method, path, params, uploads);
+                    IResponse r = dispatch(method, path, params, uploads, content);
 
                     response = new NanoHTTPD.Response(r.getStatus(), r.getMimeType(), r.getData());
                     response.header = r.getHeaders();

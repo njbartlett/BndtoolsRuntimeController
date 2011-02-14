@@ -16,6 +16,14 @@ public class DefaultResponse implements IResponse {
     public static IResponse createRedirect(String url) {
         return new DefaultResponse(HTTP_REDIRECT, MIME_HTML, "<html><body>Redirected: <a href=\"" + url + "\">" + url + "</a></body></html>");
     }
+    
+    public static IResponse createInternalError(Throwable t) {
+    	return new DefaultResponse(HTTP_INTERNALERROR, MIME_PLAINTEXT, t != null ? t.getMessage() : "Internal error");
+    }
+    
+    public static IResponse createBadRequestError(String message) {
+    	return new DefaultResponse(HTTP_BADREQUEST, MIME_PLAINTEXT, message != null ? message : "Invalid request");
+    }
 
     public DefaultResponse(String status, String mimeType, String textData) {
         this.status = status;

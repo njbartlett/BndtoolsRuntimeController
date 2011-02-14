@@ -1,0 +1,22 @@
+Test-Suites: org.bndtools.runtime.controller.test.BundlesHandlerTest
+Private-Package: org.bndtools.runtime.controller.test
+
+-buildpath: osgi.core,\
+	osgi.cmpn,\
+	bndtools.runtime.junit,\
+	org.restlet,\
+	libs/httpcore-4.1.jar;version=file,\
+	libs/httpclient-4.1.jar;version=file,\
+	libs/httpmime-4.1.jar;version=file
+
+-runbundles: org.apache.felix.shell,\
+	org.apache.felix.shell.tui,\
+	bndtools.runtime.controller;version=latest,\
+	org.restlet,\
+	org.apache.httpcomponents.httpclient,\
+	org.apache.httpcomponents.httpcore,\
+	slf4j.api,\
+	slf4j.jdk14,\
+	jcl.over.slf4j
+-runfw: org.eclipse.osgi
+Bundle-Activator: org.bndtools.runtime.controller.test.Activator

@@ -1,0 +1,14 @@
+-buildpath: osgi.core,\
+	javax.servlet,\
+	osgi.compendium,\
+	bndtools.runtime.junit,\
+	junit.osgi
+Bundle-Activator: org.bndtools.runtime.controller.internal.Activator
+Private-Package: org.bndtools.runtime.controller.internal
+-runbundles: org.apache.felix.shell,\
+	org.apache.felix.shell.tui
+-runfw: org.apache.felix.framework
+Export-Package: org.bndtools.runtime.controller
+Import-Package: org.osgi.service.log;resolution:=optional,\
+	*
+Bundle-Version: 0.0.1

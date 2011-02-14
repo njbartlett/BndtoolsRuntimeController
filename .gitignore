@@ -1,0 +1,6 @@
+# Eclipse user-specific data
+/.metadata
+
+# General junk
+*~
+.DS_Store

@@ -1,8 +1,11 @@
 package org.bndtools.runtime.controller.internal;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -28,17 +31,52 @@ public class BundlesHandler implements IHandler {
         this.log = log;
     }
 
-    public IResponse handleGet(String[] tokenizedPath, Properties params) {
+    public IResponse handleGet(String[] queryPath, Properties params) {
         IResponse response;
-        if (tokenizedPath.length == 0) {
+        if (queryPath.length == 0) {
             response = listBundles();
+        } else if (queryPath.length == 1) {
+        	try {
+				Bundle bundle = findBundle(queryPath[0]);
+				Properties props = createBundleProperties(bundle);
+				
+				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+				props.store(buffer, null);
+				
+				response = new DefaultResponse(IResponse.HTTP_OK, IResponse.MIME_PLAINTEXT, buffer.toString());
+			} catch (NumberFormatException e) {
+				response = DefaultResponse.createBadRequestError(e.getMessage());
+			} catch (IllegalArgumentException e) {
+				response = new DefaultResponse(IResponse.HTTP_NOTFOUND, IResponse.MIME_PLAINTEXT, "No such bundle");
+			} catch (IOException e) {
+				response = DefaultResponse.createInternalError(e);
+			}
         } else {
             response = new DefaultResponse(IResponse.HTTP_NOTIMPLEMENTED, IResponse.MIME_PLAINTEXT, "Not implemented.");
         }
         return response;
     }
 
-    public IResponse handlePost(String[] queryPath, Properties params, Properties uploads, InputStream content) {
+    private Properties createBundleProperties(Bundle bundle) {
+    	Properties props = new Properties();
+    	
+    	props.setProperty("id", Long.toString(bundle.getBundleId()));
+    	props.setProperty("state", printBundleState(bundle));
+    	props.setProperty("location", bundle.getLocation());
+    	props.setProperty("lastModified", Long.toString(bundle.getLastModified()));
+    	
+    	Dictionary headers = bundle.getHeaders();
+    	for (Enumeration keys = headers.keys(); keys.hasMoreElements(); ) {
+    		String key = (String) keys.nextElement();
+    		Object value = headers.get(key);
+    		if (value != null)
+    			props.setProperty(key, value.toString());
+    	}
+    	
+    	return props;
+	}
+
+	public IResponse handlePost(String[] queryPath, Properties params, Properties uploads, InputStream content) {
         IResponse response;
         if (queryPath.length == 0) {
             try {

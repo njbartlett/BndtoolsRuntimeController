@@ -36,7 +36,12 @@ List Bundles
 
 Request format: `GET /bundles/`
 
-Lists the bundles.
+Lists the bundles. Response is one line per bundle, each line containing the following fields in order, separated by commas:
+
+* Bundle ID
+* Bundle Symbolic Name
+* Location
+* State: INSTALLED, RESOLVED, STARTING, STARTING/LAZY, ACTIVE, STOPPING, or UNINSTALLED.
 
 
 Install New Bundles
@@ -55,7 +60,14 @@ Bundle Details
 
 Request format: `GET /bundles/<BUNDLE_ID>`
 
-Prints verbose details about the specified bundle.
+Prints verbose details about the specified bundle. The returned text is in Java Properties format, suitable for parsing with the `java.util.Properties` class. It shall contain:
+
+* `id`: the bundle ID;
+* `state`: INSTALLED, RESOLVED, STARTING, STARTING/LAZY, ACTIVE, STOPPING, or UNINSTALLED;
+* `location`: the bundle location;
+* `lastModified`: the last modified time of the bundle, as number of milliseconds since 1 January 1970 00:00:00 UTC;
+
+In addition it contains copies of each static bundle header, i.e., all manifest entries
 
 Returns: 200, bundle details *OR* 404, if bundle ID unknown.
 
@@ -98,6 +110,22 @@ Request format: `DELETE /bundles/<BUNDLE_ID>`
 Uninstalled the specified bundle. If the bundle ID is unknown or the bundle was already uninstalled then this request still returns successfully, due to the idempotency requirements of the DELETE verb.
 
 Returns: 200, list of bundles, *OR* 400 only on improperly formatted request.
+
+List of Packages
+---------------
+
+Request format: `GET /packages/`
+
+List of packages exported by all bundles. Response is one line per package, each line containing the following fields in order, separated by commas:
+
+* Package name;
+* Package version;
+* Exporting bundle ID (may be empty if package is stale);
+* Exporting bundle location (may be empty if package is stale);
+* Exporting bundle symbolic name (may be empty if package is stale);
+* Exporting bundle version (may be empty if package is stale);
+* Number of importing bundles;
+* Whether the package is pending removal (true/false).
 
 Planned Features
 ================

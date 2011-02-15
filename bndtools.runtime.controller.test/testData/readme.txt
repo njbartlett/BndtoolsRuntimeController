@@ -1,0 +1,1 @@
+These bundles are not dependencies; they are used as samples for over-the-wire installation and update.

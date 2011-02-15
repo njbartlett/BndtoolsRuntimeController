@@ -1,5 +1,5 @@
-Test-Suites: org.bndtools.runtime.controller.test.BundlesHandlerTest
-Private-Package: org.bndtools.runtime.controller.test
+Private-Package: org.bndtools.runtime.controller.test*
+Test-Suites: ${classes;CONCRETE;EXTENDS;junit.framework.TestCase}
 
 -buildpath: osgi.core,\
 	osgi.cmpn,\
